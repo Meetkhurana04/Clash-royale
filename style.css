@@ -1,0 +1,53 @@
+
+
+body {
+  background-color: grey;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  height: 100vh;
+}
+
+canvas {
+  /* border-radius: 32px; */
+  margin-top: -10x;
+  width: auto;
+  height: 100vh; /* Hamesha 720px virtual height ko full-screen height banado */
+  max-height: 99vh;
+  margin-bottom: 40px;
+  border-radius: 24px;
+}
+/* canvas{
+    border-radius: 32px;
+    margin-top: 80px;
+    margin-bottom: 80px;
+
+} */
+#game-wrapper {
+  position: relative;
+  width: 100%;       /* parent ke hisaab se stretch hoga */
+  max-width: 450px;  /* aspect ratio maintain */
+  height: auto;
+}
+
+#game-wrapper canvas {
+  width: 100%;
+  height: auto;
+  display: block;
+}
+
+#game-wrapper img {
+  position: absolute;
+  z-index: 2; /* canvas ke upar */
+}
+
+
+
+#opp-archer , #our-archer , #our-king , #opp-king,#bg-img{
+  visibility: hidden; 
+  width: 0;
+  height: 0;
+}
+

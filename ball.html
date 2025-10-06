@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Meet</title>
+    <link rel="stylesheet" href="style.css"/>
+
+    
+</head>
+<body>
+ 
+  <img src="assets/bg-img.jpeg" id= "bg-img">
+  <!-- towers -->
+  <img src="assets/opp-archer.png" id="opp-archer">
+  <img src="assets/opp-king.png" id="opp-king">
+  <img src="assets/our-archer.png" id="our-archer">
+  <img src="assets/our-king.png" id="our-king">
+
+  <!-- <img src="assets/elixir-bar.png" id = 'opp-bar'> -->
+<div id="game-wrapper" style="position:relative; width:480px; height:720px;">
+  <!-- Canvas -->
+  <canvas id="canvas" width="480" height="720"
+          ></canvas>
+
+  <!-- Background/towers (hidden, used for ctx.drawImage) -->
+  <img src="assets/bg-img.jpeg" id="bg-img" style="display:none;">
+  <img src="assets/opp-archer.png" id="opp-archer0" style="display:none;">
+  <img src="assets/opp-archer.png" id="opp-archer1" style="display:none;">
+
+  <img src="assets/opp-king.png" id="opp-king" style="display:none;">
+  <img src="assets/our-archer.png" id="our-archer0" style="display:none;">
+  <img src="assets/our-archer.png" id="our-archer1" style="display:none;">
+
+  <img src="assets/our-king.png" id="our-king" style="display:none;">
+
+  <!-- Our deck -->
+  <img src="assets/knight-p.png" id="our-knight" draggable="true"
+       ondragstart="onDragStart(event, 'knight','our')">
+  <img src="assets/valk-p.png" id="our-valk" draggable="true"
+       ondragstart="onDragStart(event, 'valkyrie','our')">
+  <img src="assets/pekka-p.png" id="our-pekka" draggable="true"
+       ondragstart="onDragStart(event, 'pekka','our')">
+  <img src="assets/giant-p.png" id="our-royal_giant" draggable="true"
+       ondragstart="onDragStart(event, 'royal_giant','our')">
+
+  <!-- Our bar -->
+  <img src="assets/elixir-bar.png" id="our-bar">
+
+  <!-- Opp deck -->
+  <img src="assets/knight-p.png" id="opp-knight" draggable="true"
+       ondragstart="onDragStart(event, 'knight','opp')">
+  <img src="assets/valk-p.png" id="opp-valk" draggable="true"
+       ondragstart="onDragStart(event, 'valkyrie','opp')">
+  <img src="assets/pekka-p.png" id="opp-pekka" draggable="true"
+       ondragstart="onDragStart(event, 'pekka','opp')">
+  <img src="assets/giant-p.png" id="opp-royal_giant" draggable="true"
+       ondragstart="onDragStart(event, 'royal_giant','opp')">
+
+  <!-- Opp bar -->
+  <img src="assets/elixir-bar.png" id="opp-bar">
+
+  <!-- crown -->
+  <img src="assets/crown-blue.png" id="crownblue" style="display:none;">
+  <img src="assets/crown-red.png" id="crownred" style="display:none;">
+
+  <!-- crown cusshion -->
+  <img src="assets/red-cushion.png" id="cushionred" style="display:none;">
+  <img src="assets/blue-cushion.png" id="cushionblue" style="display:none;">
+
+</div>
+
+    
+     <script src="game-logic.js"></script>
+     
+
+</body>
+</html>
+
+   <!-- <h1>Ball Tutorial</h1> -->
+    <!-- <div class="button-container">
+  <button draggable="true" ondragstart="onDragStart(event, 'PEKKA','opp')">PEKKA</button>
+<button draggable="true" ondragstart="onDragStart(event, 'Valkyrie','opp')">Valkyrie</button>
+<button draggable="true" ondragstart="onDragStart(event, 'knight','opp')">Wizard</button>
+<button draggable="true" ondragstart="onDragStart(event, 'Giant','opp')">Giant</button>
+</div>
+     -->
+  <!-- our deck -->
+<!-- <img src="assets/giant-p.png" id="our-giant"> 
+<img src="assets/pekka-p.png" id="our-pekka">
+<img src="assets/valk-p.png" id="our-valk">
+<img src="assets/wizard-p.png" id="our-wiz"> -->
+
+<!-- opp deck -->
+<!-- <img src="assets/giant-p.png" id="opp-giant"> 
+<img src="assets/pekka-p.png" id="opp-pekka">
+<img src="assets/valk-p.png" id="opp-valk">
+<img src="assets/wizard-p.png" id="opp-wiz"> -->
+
+<!-- our deck -->
+<!-- <img src="assets/giant-p.png" id="our-giant" draggable="true" ondragstart="onDragStart(event, 'giant','our')">
+<img src="assets/pekka-p.png" id="our-pekka" draggable="true" ondragstart="onDragStart(event, 'pekka','our')">
+<img src="assets/valk-p.png" id="our-valk" draggable="true" ondragstart="onDragStart(event, 'valk','our')">
+<img src="assets/wizard-p.png" id="our-wiz" draggable="true" ondragstart="onDragStart(event, 'wizard','our')"> -->
+
+<!-- opp deck -->
+<!-- <img src="assets/giant-p.png" id="opp-giant" draggable="true" ondragstart="onDragStart(event, 'giant','opp')">
+<img src="assets/pekka-p.png" id="opp-pekka" draggable="true" ondragstart="onDragStart(event, 'pekka','opp')">
+<img src="assets/valk-p.png" id="opp-valk" draggable="true" ondragstart="onDragStart(event, 'valk','opp')">
+<img src="assets/wizard-p.png" id="opp-wiz" draggable="true" ondragstart="onDragStart(event, 'wizard','opp')"> -->
+
+
+<!-- ourbar -->
+<!-- <img src="assets/elixir-bar.png" id = 'our-bar'> -->
+<!-- oppbar -->
+
+
+<!-- <div class="button-container">
+  <button draggable="true" ondragstart="onDragStart(event, 'PEKKA','our')">PEKKA</button>
+<button draggable="true" ondragstart="onDragStart(event, 'Valkyrie','our')">Valkyrie</button>
+<button draggable="true" ondragstart="onDragStart(event, 'Wizard','our')">Wizard</button>
+<button draggable="true" ondragstart="onDragStart(event, 'Giant','our')">Giant</button>
+</div> -->
+
+<!-- <img src="assets/bg-img.jpeg" id="bg-img"> -->
+  
+
+<!-- 
+yeh tb tk krna h jb tk hum target ke nearby 10 pixel tk nhi phuch jaate 
+phla test case uske sidha fornt me h 
+50-250=-200 mtlb piceh
+toh h ki 
+humara x=50 y=50 h toh
+samne wale ka oppx = 50 hoga and oppy=250 hoga
+agar humara or uska ex lgbhag like 5 ke margin me h 
+hume ulta chl ke jana h
+while(x,y aprroximately of 10 pixels oppx and opp y ke pass nhi ajate   )
+if (x-10<oppx<x+10){
+if(y-oppy<0)// piche {
+we have to move backwardd;
+
+}
+else{
+we have to move forward
+}
+}
+else{ // x door h x range se bhar h toh hume left rigt jana pd skt ah 
+if(x-oppx<0) 50-100 let say 50-100 toh < 0 {
+we have to move right 
+}
+else {
+we have to move left 
+}
+}
+
+
+
+
+function moveToTarget(x, y, oppx, oppy, step = 1) {
+    while (!(Math.abs(x - oppx) <= 10 && Math.abs(y - oppy) <= 10)) {
+
+        // X ko adjust karo
+        if (x < oppx) {
+            x += step;
+            process.stdout.write("Move Right | ");
+        } else if (x > oppx) {
+            x -= step;
+            process.stdout.write("Move Left | ");
+        }
+
+        // Y ko adjust karo
+        if (y < oppy) {
+            y += step;
+            console.log("Move Backward");
+        } else if (y > oppy) {
+            y -= step;
+            console.log("Move Forward");
+        }
+    }
+
+    console.log(`Reached near target: (${x}, ${y})`);
+}
+
+// Example
+moveToTarget(50, 50, 250, 250);
+
+-->
