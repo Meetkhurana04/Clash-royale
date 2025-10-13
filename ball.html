@@ -72,7 +72,184 @@
 
     
      <script src="game-logic.js"></script>
-     
+     <script>
+  (function () {
+    // Network client for spawn-sync multiplayer
+    const socket = io(); // connects to same origin; adjust if server on other host
+    let roomId = null;
+    let playerName = null;
+    let connected = false;
+
+    const statusEl = document.getElementById('net-status');
+    const playersListEl = document.getElementById('players-list');
+    const btnCreate = document.getElementById('btnCreate');
+    const btnJoin = document.getElementById('btnJoin');
+    const roomInput = document.getElementById('roomInput');
+    const playerNameInput = document.getElementById('playerName');
+
+    // canonical canvas values MUST match server's CANVAS_WIDTH / CANVAS_HEIGHT
+    // Server provides these back on join/create. We'll trust server but also have fallbacks.
+    let CANVAS_WIDTH = 480;
+    let CANVAS_HEIGHT = 720;
+    let PLAYERSIZE = typeof playersize !== 'undefined' ? playersize : 120;
+
+    function setStatus(txt, color) {
+      statusEl.textContent = txt;
+      statusEl.style.color = color || '#fff';
+    }
+
+    // Replace player's makeActive with a wrapper that emits when local player spawns
+    // Keep reference to original
+    const _origMakeActive = window.makeActive;
+    if (typeof _origMakeActive !== 'function') {
+      console.warn("makeActive not found — network glue expects game-logic.js to define makeActive()");
+    }
+
+    // wrapper
+    window.makeActive = function(type, x, y, opp_or_not) {
+      // call original first (so the local spawn occurs immediately)
+      try {
+        _origMakeActive(type, x, y, opp_or_not);
+      } catch (e) {
+        console.error("makeActive wrapper: original threw", e);
+      }
+
+      // Only emit to server when:
+      // - socket connected & in a room
+      // - this spawn originated from the local player (opp_or_not === 'our')
+      // - ai_mode is false (multiplayer)
+      try {
+        if (connected && roomId && opp_or_not === 'our') {
+          // send coordinates in the client's canvas coordinate space (server uses canonical values)
+          // If your client canvas size differs from server’s canonical size,
+          // scale before emitting. For now assume both sides use 480x720.
+          const payload = {
+            room_id: roomId,
+            char: type,
+            x: x,
+            y: y,
+            meta: { fromName: playerName || null }
+          };
+          socket.emit('spawn', payload);
+          // optional local debug:
+          // console.log('[net] emitted spawn', payload);
+        }
+      } catch (e) {
+        console.error("makeActive wrapper emit error", e);
+      }
+    };
+
+    // Handle incoming spawns from the server (other player's spawn)
+    socket.on('spawn_broadcast', function (payload) {
+      // payload: { from_sid, char, x, y, meta, mirror: true }
+      // On receiving side, spawn as opponent (opp)
+      try {
+        const { char, x, y, meta } = payload;
+        // call original makeActive with 'opp' to mark it as opponent spawn
+        // Use original reference to ensure our wrapper won't re-emit.
+        _origMakeActive(char, x, y, 'opp');
+        // optional debug overlay
+        // console.log('[net] received spawn', payload);
+      } catch (e) {
+        console.error("spawn_broadcast handler error", e);
+      }
+    });
+
+    socket.on('spawn_ack', function (payload) {
+      // server acknowledged our spawn; optional handling
+      // console.debug('[net] spawn ack', payload);
+    });
+
+    // connection / room lifecycle handlers
+    socket.on('connect', () => {
+      connected = true;
+      setStatus('Connected to server', '#8ef7a1');
+    });
+
+    socket.on('disconnect', () => {
+      connected = false;
+      setStatus('Disconnected', '#ff8f8f');
+      roomId = null;
+      playersListEl.textContent = '';
+    });
+
+    socket.on('room_created', function (data) {
+      roomId = data.room_id;
+      CANVAS_WIDTH = data.settings.canvas_width || CANVAS_WIDTH;
+      CANVAS_HEIGHT = data.settings.canvas_height || CANVAS_HEIGHT;
+      PLAYERSIZE = data.settings.playersize || PLAYERSIZE;
+      setStatus('Room created: ' + roomId, '#aaf');
+      playersListEl.textContent = 'Players: ' + data.players.map(p => p.name).join(', ');
+    });
+
+    socket.on('joined_room', function (data) {
+      roomId = data.room_id;
+      CANVAS_WIDTH = data.settings.canvas_width || CANVAS_WIDTH;
+      CANVAS_HEIGHT = data.settings.canvas_height || CANVAS_HEIGHT;
+      PLAYERSIZE = data.settings.playersize || PLAYERSIZE;
+      setStatus('Joined room: ' + roomId, '#aaf');
+      playersListEl.textContent = 'Players: ' + data.players.map(p => p.name).join(', ');
+    });
+
+    socket.on('player_joined', function (data) {
+      // data: {sid, name}
+      // update players list by asking server for room state (cheap)
+      if (!roomId) return;
+      socket.emit('get_room_state', { room_id: roomId });
+    });
+
+    socket.on('player_left', function (data) {
+      // update players list
+      if (!roomId) return;
+      socket.emit('get_room_state', { room_id: roomId });
+    });
+
+    socket.on('room_state', function (data) {
+      if (data.error) {
+        // ignore
+        return;
+      }
+      if (data.id === roomId) {
+        const names = (data.players||[]).map(p => p.name).join(', ');
+        playersListEl.textContent = 'Players: ' + names;
+      }
+    });
+
+    // Create / Join UI handlers
+    btnCreate.addEventListener('click', function () {
+      playerName = (playerNameInput.value || 'Player').trim();
+      socket.emit('create_room', { name: playerName });
+      setStatus('Creating room...', '#ffd');
+    });
+    btnJoin.addEventListener('click', function () {
+      const rid = (roomInput.value || '').trim();
+      if (!rid) {
+        setStatus('Enter room id to join', '#ffd');
+        return;
+      }
+      playerName = (playerNameInput.value || 'Player').trim();
+      socket.emit('join_room', { room_id: rid, name: playerName });
+      setStatus('Joining room ' + rid + '...', '#ffd');
+    });
+
+    // Start with a quick poll to see if socket is ready
+    setTimeout(() => {
+      if (!connected) setStatus('Not connected to server yet', '#f7f7f7');
+    }, 800);
+
+    // Helpful: when page unloads, leave room politely
+    window.addEventListener('beforeunload', () => {
+      if (roomId) {
+        socket.emit('leave_room', { room_id: roomId });
+      }
+      try { socket.disconnect(); } catch(e){}
+    });
+
+    // Optional: prevent duplicate scheduleAiSpawn running in multiplayer. If you run AI scheduling in game-logic,
+    // make sure to stop it when connected to a real opponent. We can't access scheduleAiSpawn easily here,
+    // but you can call stopAiSpawn() in console or modify game-logic to stop it when network connected.
+  })();
+  </script>
 
 </body>
 </html>
