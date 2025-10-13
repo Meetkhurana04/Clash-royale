@@ -69,7 +69,18 @@
   <img src="assets/blue-cushion.png" id="cushionblue" style="display:none;">
 
 </div>
-
+  <div id="net-overlay">
+      <div style="font-weight:700; margin-bottom:6px;">Multiplayer Lobby</div>
+      <input id="playerName" placeholder="Your name (optional)" />
+      <div style="display:flex; gap:8px;">
+        <button id="btnCreate">Create Room</button>
+        <button id="btnJoin">Join Room</button>
+      </div>
+      <input id="roomInput" placeholder="Room ID (for join)" />
+      <div id="net-status" class="small">Not connected</div>
+      <div id="players-list" class="small"></div>
+    </div>
+  </div>
     
      <script src="game-logic.js"></script>
      <script>
