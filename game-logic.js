@@ -1,6 +1,7 @@
 // background image
 const bgimage = document.getElementById('bg-img');
-
+let gametime = 20;
+const ai_mode = true;
 //towers
 
 const ourarcher1 = document.getElementById('our-archer1');
@@ -96,6 +97,10 @@ const spritesheet ={
         attackopp:[174,166]
     }
 }
+
+const cardIdopp = [
+  "opp-knight", "opp-valk", "opp-pekka", "opp-royal_giant"
+];
 
 // hog rider 1 se 7 h oppwalk
 const moves = ['walk','walkopp','attack','attackopp'];
@@ -317,39 +322,55 @@ function drawElixirBar(ctx, x, y, width, height, fillPercent) {
 
 }
 
-let leftCounter = 0;  // minutes
-let rightCounter = 0; // seconds
-let absolutecounter = 0;
+// let leftCounter = 0;  // minutes
+// let rightCounter = 0; // seconds
+// let absolutecounter = 0;
+
+let absolutecounter = gametime;
+
+
+// math,floor always round down math.round nearest integer pe krta h ,, math.trunc just decimal values ko htata h decide nhi krta h 
 
 
 function timer(min, sec) {
-  ctx.clearRect(20, 16, 120, 60);
+  // yeh saara visullay bdiya kr rha h game ko 
+  ctx.clearRect(30, 16, 100, 50);
 
   // Background box (your coordinates)
   ctx.fillStyle = "rgba(0, 0, 0, 0.6)";
   ctx.strokeStyle = "#fff";
   ctx.lineWidth = 3;
-  ctx.roundRect(20, 16, 120, 60, 10);
+  ctx.roundRect(30, 16, 100, 50, 10);
   ctx.fill();
   ctx.stroke();
 
   // "Time left:
-  ctx.font = "bold 16px Arial";
+  ctx.font = "bold 14px Arial";
   ctx.fillStyle = "#ffea77";
   ctx.textAlign = "center";
-  ctx.fillText("Time left :", 80, 33);
+  ctx.fillText("Time left :", 80, 30);
 
   // Timer text (dynamic)
   const timeText = `${min.toString().padStart(2, '0')}:${sec.toString().padStart(2, '0')}`;
-  ctx.font = "bold 30px Arial";
+  ctx.font = "bold 22px Arial";
   ctx.fillStyle = "#ffffff";
   ctx.strokeStyle = "#000";
   ctx.lineWidth = 2;
-  ctx.strokeText(timeText, 80, 60);
-  ctx.fillText(timeText, 80, 60);
+  ctx.strokeText(timeText, 80, 50);
+  ctx.fillText(timeText, 80, 50);
 }
 let flag = true;
-let stoptime = 360;
+
+
+// // Define your river boundaries and bridges (already given by you)
+// const RIVER_BOUNDARIES = {
+//   opp: 280,   // Opponent side edge of river
+//   our: 395    // Our side edge of river
+// };
+
+// const left_bridge = { x: 55,  topy: 290, bottomy: 290 };
+// const right_bridge = { x: 315, topy: 290, bottomy: 395 };
+
 
 
 function konseactivehongeplayer(current_elixiropp,current_elixirour){
@@ -373,9 +394,9 @@ const cardNameMap = {
     if (!card) return;
 
     const needed = attackpower[cardNameMap[id]].elixir_needed;
-    const hasEnough = current_elixir >= needed;
+    const hasEnough = current_elixir >= needed; // true false derha hoga
 
-    card.draggable = hasEnough;  // Prevent drag if not enough
+    card.draggable = hasEnough;  // Prevent drag if not enough , if false toh undraggable hoga 
     if (!hasEnough) {
       card.style.filter = "grayscale(100%) brightness(60%)";
       card.style.cursor = "not-allowed";
@@ -392,8 +413,16 @@ const cardNameMap = {
 
 
 }
+
+
+const cardidoppnew = [
+  "opp-knight", "opp-valk", "opp-pekka", "opp-royal_giant"
+];
 function gameloop() {
 
+let leftCounter = Math.floor(absolutecounter / 60);  // minutes
+let rightCounter = Math.floor(absolutecounter % 60);; // seconds
+ 
 
 ctx.drawImage(bgimage,0, 0, canvas.width, canvas.height);
 drawtowers(activeplayers);
@@ -404,8 +433,33 @@ drawtowers(activeplayers);
 
 drawElixirBar(ctx, 230, 5, 230, 28, (current_elixiropp/max_elixir));
 drawElixirBar(ctx, 230, 690, 230, 28, (current_elixirour/max_elixir));
-absolutecounter ++; rightCounter++; if (rightCounter >= 60) { rightCounter = 0; leftCounter++; } // draw timer with updated values
-timer(leftCounter, rightCounter);
+absolutecounter = Math.max(0, absolutecounter - 0.1);
+// rightCounter++; if (rightCounter >= 60) { rightCounter = 0; leftCounter++; } 
+const LOOP_MS = 100; // har 0.1 second me loop call hoga
+const DELTA = LOOP_MS / 1000; // 0.1 seconds
+
+if (leftCounter > 0 || rightCounter > 0) {
+  // Decrement seconds
+  rightCounter = rightCounter - DELTA;
+
+  // Agar 0 se neeche chala gaya
+  if (rightCounter <= 0) {
+    if (leftCounter > 0) {
+      leftCounter--;
+      rightCounter = 60 + rightCounter; // e.g. -0.1 => 59.9 se resume
+    } else {
+      rightCounter = 0; // final clamp
+    }
+  }
+
+  // Round display ke liye (avoid float mess)
+  rightCounter = Math.round(rightCounter * 10) / 10;
+}
+// Show on screen
+timer(leftCounter, Math.floor(rightCounter))
+
+// ctx.fillStyle = 'red';        // sets the fill color to red
+// ctx.fillRect(500, 300, 200, 200); // draws a solid rectangle
 
 if (max_elixir > current_elixiropp) {
     current_elixiropp = Math.min(max_elixir, current_elixiropp + 0.05);
@@ -473,17 +527,19 @@ for (let player of activeplayers){ // responsible for drawing one image of every
 let target = []; // har baar target reset isse kya hoga ki naya target and dynamicness rahe 
 //get nearest enemy ab bn gya h crazy fucnitno yeh agar me our ke liye call krugna toh opp dega
 // opp ke liye call kru toh our dega
-if(player.opp === 'opp'){
-  target =  getNearestEnemy(player,our);
-  // target.push({ id: 'ourking', x: 200, y: 200, dist:0 });
-  // target.push({ id: 'ourking', x: 200, y: 200, dist:0 });
-}
-else{
-  target = getNearestEnemy(player,opp);
-  // yhi pe hum spritesheet ka difference dene ka try kar rhe honge 
-// abhi maano woh kisi particualr player pe hi hoga jo opp ya our hoskta h 
-}
-if (!target) continue;
+// NEW: Smart targeting (bridge-aware)
+if (player.opp === 'opp') 
+{ 
+  target = getNearestEnemy(player, our); 
+} 
+else
+{ 
+  target = getNearestEnemy(player, opp);
+} 
+if (!target) 
+ return null;
+
+  
 if(target.dist>target.kitnapass){
    if(player.opp === 'our' && player.state === 'attack'){
   player.state = 'walk';
@@ -582,7 +638,7 @@ const ourkingalive = activeplayers.some(p => p.id.includes("ourking"));
 const oppkingalive = activeplayers.some(p => p.id.includes("oppking"));
 
  
-if (absolutecounter < stoptime && ourkingalive && oppkingalive) {
+if (absolutecounter > 0 && ourkingalive && oppkingalive) {
     setTimeout(() => requestAnimationFrame(gameloop), 100);
   } 
   else {
@@ -699,7 +755,7 @@ if (!oppTowersAlive.left) ctx.drawImage(crownblue, 80, 382, 137, 175);
     // agar humara score jyada h toh hum haar gye h
     ctx.fillText("WINNER", 250, 120); // red (top)
   } else {
-    stoptime += 60;
+    absolutecounter += 60;
     gameloop();
   }
 }
@@ -831,7 +887,7 @@ function getNearestEnemy(player, enemyGroup) {
 
   const baseRange = 60;
 
-  // ⚙️ Adjusted range based on player’s Y position
+  //  Adjusted range based on player’s Y position
   const perspectiveScale = getPerspectiveScale(player.y);
   let  kitnapass = baseRange * perspectiveScale;
   kitnapass = 52;
@@ -896,7 +952,7 @@ function spawnTower(type, x, y, w, h, opp_or_not) {
     y: y,
     dx: 0,
     dy: 0,
-    power:0,
+    power:3,
     health: 200,
     maxhealth : 200,
     state: "idle",
@@ -950,7 +1006,14 @@ window.onload = () => {
   spawnTower("ourarcher0", 50, 480,120,140 ,"our");
   spawnTower("ourarcher1", 310, 480,120,140, "our");
   spawnTower("ourking", 150,490, 180,180, "our");
+if(ai_mode){
+  // yeh global hoga jo onload chlna chaiye
+  MakeOppDeckUnavailable();
+  scheduleAiSpawn();
+  
+}
   gameloop();
+
 
 };
 
@@ -1003,7 +1066,7 @@ function drawHealthBar(ctx, player) {
   player.displayHealth = player.displayHealth ?? player.health;
   player.displayHealth += (player.health - player.displayHealth) * 0.1; // Smooth transition
 
-  const hpPercent = Math.max(0, Math.min(1, player.displayHealth / (player.maxHealth || 100)));
+  const hpPercent = Math.max(0, Math.min(1, player.displayHealth / (player.maxhealth || 100)));
   const x = player.x + playersize / 2 - barWidth / 2;
   const y = player.y - offsetY;
 
@@ -1073,4 +1136,334 @@ function getPerspectiveScale(y) {
   const minScale = 1.0;
   const maxScale = 1.25;
   return maxScale - ((y / canvas.height) * (maxScale - minScale));
+}
+
+
+//deck ke character ka array bnana h 
+function MakeOppDeckUnavailable() {
+  // disable all opponent cards so player can't drag/spawn them in AI mode
+  cardidoppnew.forEach(id => {
+    const card = document.getElementById(id);
+    if (!card) return;
+    card.draggable = false;
+    // ensure any dragstart is prevented (extra safety)
+    card.ondragstart = (e) => { e.preventDefault(); return false; };
+    // visual feedback
+    // card.style.filter = "grayscale(100%) brightness(60%)";
+    card.style.cursor = "not-allowed";
+    card.setAttribute("aria-disabled", "true");
+    card.style.pointerEvents = "auto";
+  });
+}
+
+// function elexir_check(){
+//   const ourList = activeplayers
+//     .filter(p => p.opp === 'our')
+//     .map(p => ({ id: p.id, x: p.x, y: p.y }));
+
+// // ek new array bnadega jisme kya hoga ki ourlsit me sirf our ke id x and y horhe honge
+
+//   const spawnCount = getRandomInt(1, 3);
+// // spawncount kitne spawn krne h ek baari me  1 se leke 3 hoskte h 
+// // toh yeh jitne bche huye elexir honge usse baatega 
+
+//   const affordableChars = Object.keys(attackpower).filter(
+//     k => attackpower[k].elixir_needed <= current_elixiropp
+//   );
+//   //  yeh jo attackpower tha uski keys ko string me bdal dega
+//   // Object.keys(attackpower) gives ['pekka', 'valkyrie', 'knight', 'royal_giant']
+//   // The .filter() function will now iterate over these keys:
+// // For 'pekka', the elixir_needed is 5. Since 5 > 4, it will not be included in the affordableChars array.
+// //  So, after filtering, affordableChars will look like this: [valk , knight]
+// // iska mtlb h ki aap whi hi spawn krskte ho   
+//   if (affordableChars.length === 0) {
+//     // can't buy anything right now
+//     // khali h toh bhar aajao 
+//     return;
+//   }
+// // ✅ You’re right — strictly speaking,
+// // that first affordableChars outside the loop isn’t needed
+// // since the loop re-checks affordableNow anyway.
+
+// // It’s mostly there for:
+
+// // Early exit — to avoid running the whole spawn loop if no cards are affordable at all right now.
+
+// // Readability — it’s a clear "pre-check" before the main loop starts
+  
+//   for (let i = 0; i < spawnCount; i++) {
+//     // yeh jitnei baar spawn krna hoga utni baar ke liye chlega
+//     // ab kitne spawn krne h uske hisab se spawn krenge 
+//     // Recalc affordable each loop in case elixir changes during spawns
+//     const affordableNow = Object.keys(attackpower).filter(
+//       k => attackpower[k].elixir_needed <= current_elixiropp
+//     );
+//     if (affordableNow.length === 0) break;
+
+//     // pick a random char AI can afford
+//     const char = affordableNow[getRandomInt(0, affordableNow.length - 1)]; // e.g. "pekka"
+
+//     // pick a focus point: random our unit OR null if none
+//     // ,tlb oponent ke konse position ke pass spawn kru 
+//     const focus = ourList.length ? ourList[getRandomInt(0, ourList.length - 1)] : null;
+
+//     spawnWithAi(char, focus);
+
+//     // small micro-delay between spawns (optional) to avoid all-in-one-frame
+//     // (not blocking; just a tiny pause before next iteration)
+//   }
+// // GOTCHA / SUGGESTION
+
+// // Right now you re-evaluate affordability each loop — good. But you do not reserve any elixir for defense (so AI may spend everything). Consider attackpower[k].elixir_needed <= current_elixiropp - reserve to keep a buffer.
+  
+// //   for(let player of activeplayers){
+// //   if(player.opp === 'our'){
+// //     ournew[player.id] = [player.x,player.y];
+// //   // ournew ka bhar liya h humne
+// //   }
+// // }
+// // // const stats = attackpower[type.toLowerCase()];
+// // // const needed = attackpower[cardNameMap[id]].elixir_needed;
+// //   for( let i of ournew ){
+     
+// //       const stats = cardNameMap[i].toLowerCase();
+// //       // stats toh naam dedega 
+// //       const nameOfChar = attackpower[stats];
+// //       if(nameOfChar.elixir_needed< current_elixirour){
+// //         spawnWithAi(stats);
+// //       }
+
+// //   }
+
+// }
+// // function spawnWithAi(char){
+// //   x=ournew[0].x;
+// //   y=ournew[0].y;
+
+// //   if(y>350){
+// //     //other side h toh hum x mathc krenge y nhi 
+// //     y=y-200;
+// //     makeActive(char,x,y,'our')
+// //   }
+// //   else{
+// //     x=x-50;
+// //     y=y-50;
+// //     makeActive(char,x , y ,'our');
+// //   }
+
+// // }
+
+// function spawnWithAi(char, focus) {
+//   // char is like "pekka", "valkyrie", etc. makeActive expects type string.
+//   let x, y;
+
+//   if (focus) {
+//     // Spawn roughly above/between the focus unit so AI pushes toward it.
+//     // Give some horizontal jitter so AI doesn't stack perfectly.
+//     x = focus.x + getRandomInt(-60, 60);
+//     // uske upar ya niche khi pe bhi spawn hojaaye 
+
+//     // Ensure opponent spawns on the top half (opponent area).
+//     // We'll pick a y in opponent spawn range (100..300) or above the focus.
+//     y = getRandomInt(100, 300);
+//     // spawn 100 se 300 ke bich hi spawn ho 
+
+//     // If focus is very close to top, nudge spawn a bit away
+//     if (focus.y < 250) {
+//       y = clamp(focus.y + getRandomInt(30, 80), 100, 300);
+//       //iska mtlb  h y ai ke area me h toh ab hume itna random nhi krna h 
+//       // mtllb woh value aisi aaye ki voh kese bhi krke 100 se 300 ke bich hi rahe 
+
+//     }
+//   } else {
+//     // No friendly units on field — pick a random top-half spawn location
+//     x = getRandomInt(60, canvas.width - playersize - 60);
+//     // x khi bhi hoskta h us widht me agar huamra palyer abhi humari side hi h 
+//     // 60 se lkeke canvaswidth 400 -playersize(60) - 60 tk khi pe bhi
+//     y = getRandomInt(100, 300);
+//     // and y 100 se 300 tk
+//   }
+//   // clam ka kaam hota h bich me fix krna 
+//   // Clamp inside canvas & opponent allowed area
+//   x = clamp(x, 0, canvas.width - playersize);
+//   // Keep inside opponent area (top half). OPP_MAX_Y is defined earlier as 400
+//   y = clamp(y, 0, Math.min(OPP_MAX_Y - playersize, canvas.height - playersize));
+//   // yeh wala bhi y ko fix krdega 0 se leke kisis trh se toh krdega
+//   // Make sure we only spawn if AI still has elixir; makeActive will subtract
+//   const needed = attackpower[char].elixir_needed;
+//   if (current_elixiropp >= needed) {
+//     makeActive(char, x, y, 'opp'); // spawn as opponent
+//   }
+// }
+
+// let aiSpawnTimerId = null;
+
+// function scheduleAiSpawn() {
+//   if (!ai_mode) return;
+//   // pick random ms between 3000 and 5000
+//   const delay = getRandomInt(3000, 5000);
+//   aiSpawnTimerId = setTimeout(() => {
+//     elexir_check();
+//     // schedule next
+//     scheduleAiSpawn();
+//   }, delay);
+// }
+
+// function stopAiSpawn() {
+//   if (aiSpawnTimerId) {
+//     clearTimeout(aiSpawnTimerId);
+//     aiSpawnTimerId = null;
+//   }
+// }
+
+// function getRandomInt(min, max) {
+//   // inclusive min, inclusive max
+//   return Math.floor(Math.random() * (max - min + 1)) + min;
+// }
+
+// function clamp(v, a, b) {
+//   return Math.max(a, Math.min(b, v));
+// }
+
+// ========================
+// 🔹 AI Difficulty Settings
+// ========================
+let aiDifficulty = "extreme"; 
+// possible: "easy", "medium", "hard", "extreme"
+
+// helper to easily toggle difficulty
+function setAiDifficulty(level) {
+  const allowed = ["easy", "medium", "hard", "extreme"];
+  if (allowed.includes(level)) aiDifficulty = level;
+  console.log("AI difficulty set to:", aiDifficulty);
+}
+
+// ====================================
+// 🔹 Core AI Logic (Elixir Check + Spawn)
+// ====================================
+function elexir_check() {
+  const ourList = activeplayers
+    .filter(p => p.opp === 'our')
+    .map(p => ({ id: p.id, x: p.x, y: p.y }));
+
+  // ---------- Difficulty affects spawn count ----------
+  let spawnRange;
+  switch (aiDifficulty) {
+    case "easy": spawnRange = [1, 1]; break;
+    case "medium": spawnRange = [1, 2]; break;
+    case "hard": spawnRange = [2, 3]; break;
+    case "extreme": spawnRange = [2, 4]; break;
+  }
+  const spawnCount = getRandomInt(spawnRange[0], spawnRange[1]);
+
+  // ---------- Difficulty affects elixir usage ----------
+  let elixirReserve;
+  switch (aiDifficulty) {
+    case "easy": elixirReserve = 2; break;     // saves elixir, slower
+    case "medium": elixirReserve = 1; break;
+    case "hard": elixirReserve = 0; break;
+    case "extreme": elixirReserve = -1; break; // can overspend a bit
+  }
+
+  const affordableChars = Object.keys(attackpower).filter(
+    k => attackpower[k].elixir_needed <= (current_elixiropp - elixirReserve)
+  );
+  if (affordableChars.length === 0) return;
+
+  // ---------- Difficulty affects spawn targeting behavior ----------
+  let focusBias; // % chance AI tries to target near your troops
+  switch (aiDifficulty) {
+    case "easy": focusBias = 0.3; break;     // 30% times near player
+    case "medium": focusBias = 0.6; break;
+    case "hard": focusBias = 0.8; break;
+    case "extreme": focusBias = 1.0; break;  // always near player
+  }
+
+  for (let i = 0; i < spawnCount; i++) {
+    const affordableNow = Object.keys(attackpower).filter(
+      k => attackpower[k].elixir_needed <= (current_elixiropp - elixirReserve)
+    );
+    if (affordableNow.length === 0) break;
+
+    // choose random card to spawn
+    const char = affordableNow[getRandomInt(0, affordableNow.length - 1)];
+
+    // choose focus based on bias
+    let focus = null;
+    if (ourList.length && Math.random() < focusBias) {
+      focus = ourList[getRandomInt(0, ourList.length - 1)];
+    }
+
+    spawnWithAi(char, focus);
+  }
+}
+
+// ====================================
+// 🔹 AI Spawn Placement Logic
+// ====================================
+function spawnWithAi(char, focus) {
+  let x, y;
+
+  if (focus) {
+    // try to spawn near target
+    x = focus.x + getRandomInt(-60, 60);
+    y = focus.y - getRandomInt(50, 100); // spawn slightly above target
+  } else {
+    // no focus — random in opponent area
+    x = getRandomInt(60, canvas.width - playersize - 60);
+    y = getRandomInt(100, 300);
+  }
+
+  // tighter spacing for higher difficulties
+  const clampMargin = (aiDifficulty === "extreme") ? 20 : 0;
+
+  x = clamp(x, 0 + clampMargin, canvas.width - playersize - clampMargin);
+  y = clamp(y, 0 + clampMargin, Math.min(OPP_MAX_Y - playersize, canvas.height - playersize - clampMargin));
+
+  const needed = attackpower[char].elixir_needed;
+  if (current_elixiropp >= needed) {
+    makeActive(char, x, y, 'opp');
+  }
+}
+
+// ====================================
+// 🔹 AI Spawn Scheduler (auto-runner)
+// ====================================
+let aiSpawnTimerId = null;
+
+function scheduleAiSpawn() {
+  if (!ai_mode) return;
+
+  // difficulty affects reaction delay
+  let delayRange;
+  switch (aiDifficulty) {
+    case "easy": delayRange = [5000, 7000]; break;
+    case "medium": delayRange = [3000, 5000]; break;
+    case "hard": delayRange = [2000, 3500]; break;
+    case "extreme": delayRange = [1000, 2500]; break;
+  }
+
+  const delay = getRandomInt(delayRange[0], delayRange[1]);
+  aiSpawnTimerId = setTimeout(() => {
+    elexir_check();
+    scheduleAiSpawn();
+  }, delay);
+}
+
+function stopAiSpawn() {
+  if (aiSpawnTimerId) {
+    clearTimeout(aiSpawnTimerId);
+    aiSpawnTimerId = null;
+  }
+}
+
+// ====================================
+// 🔹 Utility Functions
+// ====================================
+function getRandomInt(min, max) {
+  return Math.floor(Math.random() * (max - min + 1)) + min;
+}
+
+function clamp(v, a, b) {
+  return Math.max(a, Math.min(b, v));
 }
