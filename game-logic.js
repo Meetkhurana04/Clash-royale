@@ -1328,7 +1328,7 @@ function MakeOppDeckUnavailable() {
 // ========================
 // 🔹 AI Difficulty Settings
 // ========================
-let aiDifficulty = "extreme"; 
+let aiDifficulty = "medium"; 
 // possible: "easy", "medium", "hard", "extreme"
 
 // helper to easily toggle difficulty
@@ -1467,3 +1467,4 @@ function getRandomInt(min, max) {
 function clamp(v, a, b) {
   return Math.max(a, Math.min(b, v));
 }
+
